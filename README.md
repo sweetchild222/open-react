@@ -6,5 +6,5 @@ the software serving as the backend for this blog service can be found here.
 
 [https://github.com/sweetchild222/open-spring](https://github.com/sweetchild222/open-spring)
 
-to install 'npm i'
+to install 'npm i'<br>
 to run 'npm start'
