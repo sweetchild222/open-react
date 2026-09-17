@@ -1,0 +1,393 @@
+import { useState, useContext, useEffect} from 'react';
+import {useNavigate} from 'react-router-dom';
+
+import * as AlarmAPI from '@rest/AlarmAPI.js'
+import * as SubscribeAPI from '@rest/SubscribeAPI.js'
+import * as BookmarkAPI from '@rest/BookmarkAPI.js'
+import * as ArticleAPI from '@rest/ArticleAPI.js'
+import * as BlogAPI from '@rest/BlogAPI.js'
+
+import AuthContext from "@util/AuthContext.js";
+import * as ReplaceUserTag from "@util/ReplaceUserTag.js";
+import * as UserRepository from "@util/UserRepository.js";
+
+import PrettyButton from '@gui/PrettyButton.js';
+import {Vertical, Horizental} from "@gui/Flex.js";
+import ProfileImage from "@gui/ProfileImage.js";
+
+import { RiMenuUnfold3Line } from "react-icons/ri";
+import { RiMenuFold3Line } from "react-icons/ri";
+import { VscBellDot } from "react-icons/vsc";
+import { VscBell } from "react-icons/vsc";
+import { IoIosArrowDown } from "react-icons/io";
+import AlarmModal from "./AlarmModal.js";
+import {VPad, HPad} from "@gui/Pad.js";
+import { useTranslation } from 'react-i18next';
+import packageJson from '../../../package.json';
+
+import './SideBar.css';
+
+
+export default function () {
+
+    
+    const { t } = useTranslation()
+
+    const {auth, validAuth, removeAuth} = useContext(AuthContext)
+    const [alarms, setAlarms] = useState(null)
+    const [subscribes, setSubscribes] = useState(null)
+    const [bookmarks, setBookmarks] = useState(null)
+    const [isOpenAlarmModal, setIsOpenAlarmModal] = useState(false)
+
+    const subscribeMoreCount = 6
+    const [subscribeCount, setSubscribeCount] = useState(subscribeMoreCount)
+
+    const bookmarkMoreCount = 6
+    const [bookmarkCount, setBookmarkCount] = useState(bookmarkMoreCount)
+
+    const [isOpen, setIsOpen] = useState(true);
+    const navigate = useNavigate()
+
+    useEffect(() => {
+
+        if(validAuth(auth)) {
+
+            loadAlarms().then(alarms=>{
+
+                if(alarms != null)
+                    setAlarms(alarms)
+            })
+
+            loadSubscribe().then(subscribes =>{
+
+                if(subscribes != null)
+                    setSubscribes(subscribes)
+            })
+
+            loadBookmarks().then(bookmarks =>{
+
+                if(bookmarks != null)
+                    setBookmarks(bookmarks)
+            })
+        }
+        else {
+            setAlarms(null)
+            setIsOpenAlarmModal(false)
+        }
+
+    }, [auth])
+
+
+    const loadBookmarks = async() => {
+
+
+        if(!validAuth(auth))
+            return null
+
+        const resBookmarks = await BookmarkAPI.getUserBookmark(auth.jwt, auth.user_id, null)
+
+        if(resBookmarks.success == false)
+            return null
+
+        const bookmarks = resBookmarks.payload
+
+        bookmarks.sort((a, b)=> b.id - a.id)
+
+        const articleIdList = bookmarks.map(item => item.article_id);
+
+        const articles = []
+
+        const limit = 100
+        let startIndex = 0
+
+        while(articleIdList.length > startIndex){
+
+            const list = articleIdList.slice(startIndex, startIndex + limit)
+
+            const resArticles = await ArticleAPI.getArticles('id=' + list)
+
+            if(resArticles.success == true)
+                resArticles.payload.map(item=>articles.push(item))
+
+            startIndex += limit
+        }
+
+        bookmarks.forEach((item, index) => {
+            item.article = articles.find(article => (article.id == item.article_id))
+        })
+
+        const user_ids = bookmarks.map(({article}) => article.user_id)
+        
+        const users = await UserRepository.getByIDList([...new Set(user_ids)])
+
+        if(users == null)
+            return null
+        
+        bookmarks.forEach((item, index) => {
+            item.article.user = users.find(user => (user.id == item.article.user_id))
+        })
+
+        return bookmarks
+    }
+    
+
+    const loadAlarms = async()=>{
+
+        if(!validAuth(auth))
+            return null
+        
+        const resAlarms = await AlarmAPI.getAlarm(auth.jwt, auth.user_id)
+
+        if(resAlarms.success == false)
+            return null
+
+        const alarms = resAlarms.payload
+
+        alarms.sort((a, b)=> b.id - a.id)
+
+        const promises = []
+
+        
+        alarms.map(alarm => promises.push(alarm.checked == 0 ? ReplaceUserTag.toUserNicknameGreen(alarm.comment) : ReplaceUserTag.toUserNicknameGray(alarm.comment)))
+
+        const resPromise = await Promise.all(promises)
+
+        if(resPromise.length != alarms.length)
+            return null
+
+        resPromise.map((data, index) => alarms[index].seenComment = data)
+
+        const user_ids = alarms.map(({from_user_id}) => from_user_id)
+        
+        const users = await UserRepository.getByIDList([...new Set(user_ids)])
+
+        for(const alarm of alarms)
+            alarm.user = users.find(user => user.id == alarm.from_user_id)
+                
+        return alarms
+    }
+
+
+    const loadSubscribe = async() => {
+
+        if(!validAuth(auth))
+            return null
+
+        const query = 'user_id=' + auth.user_id
+
+        const resSubscribe = await SubscribeAPI.getSubscribe(query)
+
+        if(resSubscribe.success == false)
+            return null
+
+        resSubscribe.payload.sort((a, b)=> b.id - a.id)
+
+        const blogIdList = resSubscribe.payload.map(item => item.blog_id)
+
+        const limit = 100
+        let startIndex = 0
+        const blogs = []
+
+        while(blogIdList.length > startIndex){
+
+            const list = blogIdList.slice(startIndex, startIndex + limit)
+
+            const resBlog = await BlogAPI.getBlogs('id=' + list)
+
+            if(resBlog.success == true)
+                resBlog.payload.forEach(item=>blogs.push(item))
+            
+            startIndex += limit
+        }
+        
+        resSubscribe.payload.forEach((item, index) =>{
+            item.blog = blogs.find(blog => (blog.id == item.blog_id))
+        })
+
+        const userIdList = resSubscribe.payload.filter(item => item.blog !== null).map(item => item.blog.user_id)
+    
+        const resUsers = await UserRepository.getByIDList([...new Set(userIdList)])
+
+        if(resUsers == null)
+            return
+
+        resSubscribe.payload.forEach((item, index) =>{
+            item.user = resUsers.find(user => (user.id == item.blog.user_id))
+        })
+
+        return resSubscribe.payload
+    }
+
+
+    const onClickNavigateHome = (e) =>{
+
+        navigate('/')
+    }
+    
+
+    const onClickLogIn = (e) =>{
+
+        navigate("/account")
+    }
+
+
+    const onClickUser = (e) =>{
+
+        if(validAuth(auth))
+            navigate('/user/' + auth.user_id)
+        else
+            navigate('/account')
+    }
+
+
+    const onClickAtError= (e) => {
+
+        removeAuth()
+        navigate('/account')
+    }
+
+
+
+    const onClickAlarm = async(e) => {
+
+        if(!validAuth(auth)){
+            window.showToast(t('toast.sidebar.requireLogin'), 'info')
+            navigate('/account')
+            return
+        }
+
+        if(alarms == null)
+            return
+
+        if(alarms.length == 0){
+            window.showToast(t('toast.sidebar.noAlarm'), 'info')
+            return
+        }
+
+        setIsOpenAlarmModal(true)
+    }
+
+
+    const onCloseAlarmModal = async() => {        
+
+        
+        setIsOpenAlarmModal(false)
+    }
+
+    const onUpdatedAlarms = async(alarms)=>{
+
+        setAlarms(structuredClone(alarms))
+    }
+
+    const onClickNavigateMyBlog = async() =>{
+
+        if(!validAuth(auth)){
+            window.showToast(t('toast.sidebar.requireLogin'), 'info')
+            navigate('/', {state:{comback:true}})
+            return
+        }
+    
+        navigate("/blog/" + auth.blog_id)
+    }
+    
+
+    const onClickMoreSubscribe = async () => {
+
+        if(subscribeCount >= subscribes.length)
+            return
+              
+        setSubscribeCount(item => item + subscribeMoreCount)
+    }
+
+    const onClickNavigateBlog = (blog_id) =>{
+
+        navigate('/blog/' + blog_id)
+    }
+
+
+    const onClickNavigateArticle = (article) => {
+    
+        navigate('/blog/' + article.blog_id  + '/article/' + article.id)            
+    }
+
+
+
+    const onClickMoreBookmark = async () => {
+
+        if(bookmarkCount >= bookmarks.length)
+            return
+
+        setBookmarkCount(item => item + bookmarkMoreCount)
+    }
+
+    console.log()
+
+    
+    return (
+        <div className={`sidebar ${isOpen ? 'open' : 'collapsed'}`} style={{padding:'8px'}}>
+            <Horizental style={{justifyContent:'space-between'}}>
+                {isOpen && <Horizental style={{alignItems:'center'}}>
+                    {!validAuth(auth) && <PrettyButton type='success' onClick={onClickLogIn} style={{height:'fit-content'}}>{t('page.home.login')}</PrettyButton>}
+                    {validAuth(auth) && <Horizental style={{alignItems: 'center'}}>
+                        <ProfileImage shape={'circle'}  userId={auth.user_id} size={48} onClick={onClickUser} onClickAtError={onClickAtError}/>
+                        {alarms != null && <div style={{width:'8px'}}/>}
+                        {alarms != null && <PrettyButton  type='transparent' style={{color:'white'}} onClick={onClickAlarm}>{(alarms.filter(item => item.checked == 0).length > 0 ? <VscBellDot size={32}/> : <VscBell size={32}/>)}</PrettyButton>}
+                        {alarms != null && <AlarmModal isOpen={isOpenAlarmModal} onClose={onCloseAlarmModal} onUpdatedAlarms={onUpdatedAlarms} alarms={alarms}></AlarmModal>}
+                        </Horizental>
+                    }
+                    </Horizental>
+                }
+                <PrettyButton type={'transparent'} style={{height:'64px', width:'64px'}} onClick={() => setIsOpen(!isOpen)}>
+                    {isOpen ? <RiMenuFold3Line size={32}/> : <RiMenuUnfold3Line size={32}/>}
+                </PrettyButton>
+            </Horizental>
+
+            {validAuth(auth) && <div style={{borderBottom: '1px solid #2d2d44', borderTop: '1px solid #2d2d44'}}>
+                    <PrettyButton style={{marginTop:'8px', marginBottom:'8px', width:'100%', minWidth:'fit-content'}} onClick={onClickNavigateMyBlog}>{t('page.home.myBlog')}</PrettyButton>
+                </div>
+            }
+        
+            {validAuth(auth) && subscribes && subscribes.length > 0 && <Vertical style={{marginTop:'16px', marginBottom:'8px', paddingBottom:'8px', borderBottom: '1px solid #2d2d44'}}>
+                <label style={{color:'lightgray', whiteSpace: 'nowrap'}}>{t('page.home.subscribedBlog')}</label>
+                <VPad size={8}/>
+                {subscribes.slice(0, subscribeCount).map((data, index) => 
+                    <Horizental key={data.id} style={{alignItems:'center', marginTop:'8px', marginBottom:'8px'}} onClick={() => onClickNavigateBlog(data.blog_id)}>
+                        <ProfileImage shape={'circle'} user={data.user} size={32}></ProfileImage>
+                        <HPad size={8}/>
+                        <div className={'clamped-text'} style={{'--line-count':1, cursor:'pointer', whiteSpace: 'nowrap', color:'ghostwhite'}}>{data.blog.title}</div>
+                    </Horizental>
+                )}
+                {subscribes.length > subscribeCount && <Horizental style={{alignItems:'center', cursor:'pointer'}} onClick={onClickMoreSubscribe}>
+                    <IoIosArrowDown size={32}/>
+                    <div className={'clamped-text'} style={{'--line-count':1, whiteSpace: 'nowrap', color:'ghostwhite', marginLeft:'8px'}}>{t('system.more')}</div>
+                    </Horizental>
+                }
+            </Vertical>}
+
+            {validAuth(auth) && bookmarks && bookmarks.length > 0 && <Vertical style={{marginTop:'8px', marginBottom:'8px', paddingBottom:'8px', borderBottom: '1px solid #2d2d44'}}>
+                <label style={{color:'lightgray', whiteSpace: 'nowrap'}}>{t('page.home.bookmarkArticle')}</label>
+                <VPad size={8}/>
+                {bookmarks.slice(0, bookmarkCount).map((data, index) =>
+                    <Horizental key={data.id} style={{alignItems:'center', marginTop:'8px', marginBottom:'8px'}} onClick={() => onClickNavigateArticle(data.article)}>
+                        <ProfileImage shape={'circle'} user={data.article.user} size={32}></ProfileImage>
+                        <HPad size={8}/>
+                        <div className={'clamped-text'} style={{'--line-count':1, cursor:'pointer', whiteSpace: 'nowrap', color:'ghostwhite'}}>{data.article.title}</div>
+                    </Horizental>
+                )}
+                {bookmarks.length > bookmarkCount && <Horizental style={{alignItems:'center', cursor:'pointer'}} onClick={onClickMoreBookmark}>
+                    <IoIosArrowDown size={32}/>
+                    <div className={'clamped-text'} style={{'--line-count':1, whiteSpace: 'nowrap', color:'ghostwhite', marginLeft:'8px'}}>{t('system.more')}</div>
+                    </Horizental>
+                }
+            </Vertical>}
+
+        <div style={{flex:'1'}}/>
+            <Vertical style={{justifyContent:'center', alignItems:'center'}}>
+                <img src='/logo/logo.svg' alt='logo' height='64px' width='64px' onClick={onClickNavigateHome}/>
+                <VPad size={16}/>
+                <div>{packageJson.version}</div>
+            </Vertical>
+            <VPad size={32}/>
+        </div>
+    );
+}

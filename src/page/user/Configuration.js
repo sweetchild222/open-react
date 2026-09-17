@@ -1,0 +1,284 @@
+import {useState, useContext, useEffect, useRef} from "react";
+import {useNavigate, useParams} from 'react-router-dom';
+
+import AuthContext from "@util/AuthContext.js";
+import ImagePicker from "@util/ImagePicker.js";
+import * as UserAPI from '@rest/UserAPI.js'
+import * as BlobAPI from '@rest/BlobAPI.js'
+import PrettyButton from '@gui/PrettyButton.js';
+import Spinner from '@gui/Spinner.js';
+import Modal from '@gui/Modal.js';
+import {blobFromCanvas} from "@util/ImageUtil.js";
+import {isMobile, isNotMobile} from "@util/DeviceType.js";
+import ImageCropModal from '@gui/ImageCropModal.js'
+import ProfileImage from '@gui/ProfileImage.js'
+import {Vertical, Horizental} from "@gui/Flex.js";
+import PasswordModal from './PasswordModal.js';
+import { LuImageUp } from "react-icons/lu";
+import Integer from "@util/Integer.js";
+import {VPad} from "@gui/Pad.js";
+import { useTranslation } from 'react-i18next';
+
+import * as validator from './Validator.js'
+
+
+export default function() {
+
+    const { t } = useTranslation()
+    
+    const {auth, validAuth, reloadAuth, removeAuth} = useContext(AuthContext)
+    const [isModalLogout, setIsModalLogout] = useState(false)
+    const [isModalPassword, setIsModalPassword] = useState(false)
+    const [isModalWithdraw, setIsModalWithdraw] = useState(false)
+    
+    const [isModalNickname, setIsModalNickname] = useState(false)
+    const [isModalImageCrop, setIsModalImageCrop] = useState(false)
+    const [imageFile, setImageFile] = useState(null)
+    const [user, setUser] = useState(null)
+
+    const profileSize = 256
+    const refImageCrop = useRef(null)
+    const navigate = useNavigate() 
+
+    const { id } = useParams()
+
+    const user_id = Integer(id)
+
+    useEffect(()=>{
+        document.title = t('system.title')
+    }, [])
+
+    useEffect(()=> {
+
+        if(!validAuth(auth)){
+            navigate('/')
+            return
+        }
+
+        if(user_id != auth.user_id){
+            navigate('/')
+            return
+        }
+
+        UserAPI.getUser(auth.user_id).then((resUser)=> {
+            
+            if(resUser.success == false)
+                return
+
+            setUser(resUser.payload)
+        })
+
+    }, [auth])
+            
+
+    const onResultLogout = (result) => {
+
+        if(result == true){
+            removeAuth()
+            window.showToast(t('toast.configuration.successLogout'), 'info')
+            navigate('/')
+        }
+    }
+
+
+    const onClickLogout = ()=> {
+
+        setIsModalLogout(true)
+    }
+
+
+    const onClickPassword = ()=>{
+        
+        setIsModalPassword(true)
+    }
+
+
+    const onClickUserWithdraw = async() => {
+
+        setIsModalWithdraw(true)
+    }
+
+
+    const onClickUserNickname = async() =>{
+
+        setIsModalNickname(true)
+    }
+
+
+    const onClickProfile = async() =>{
+
+        if(isMobile()){
+            window.showToast(t('toast.configuration.notSupportMobile'), 'user-error')
+            return
+        }
+
+        const imageFile = await ImagePicker()
+
+        if(imageFile == null)
+            return
+        
+        if(imageFile.format == 'unknown'){
+            window.showToast(t('toast.configuration.unavailableFile'), 'user-error')
+            return
+        }
+
+        setImageFile(imageFile.file)
+        setIsModalImageCrop(true)
+    }
+
+
+    const onClickApply = async() => {
+
+        if(!validAuth(auth))
+            return
+
+        if(!refImageCrop.current)
+            return
+
+        const dWidth = profileSize
+        const dHeight = profileSize
+
+        const canvas = await refImageCrop.current.export(dWidth, dHeight)
+        
+        const blob = await blobFromCanvas(canvas)
+
+        const formData = new FormData()
+        formData.append('image', blob)
+        
+        const resProfile = await BlobAPI.postProfile(auth.jwt, formData)
+
+        if(resProfile.success == false){
+            setIsModalImageCrop(false)
+            window.showToast(t('toast.configuration.failedProfile'), 'system-error')
+            return
+        }
+
+        const url = process.env.API_TARGET + '/api/blob/profile/' + resProfile.payload.id
+
+        const resUser = await UserAPI.patchUser(auth.jwt, auth.user_id, {image: url})
+
+        if(resUser.success == false){
+            setIsModalImageCrop(false)
+            window.showToast(t('toast.configuration.failedProfile'), 'system-error')
+            return
+        }        
+    
+        user.image = url
+        setUser(structuredClone(user))
+        
+        setIsModalImageCrop(false)
+
+        reloadAuth(auth)
+    }
+
+
+    const onInputPasswordForUser = async(input) => {
+
+        if(!validAuth(auth))
+            return
+
+        if(input == ''){
+            window.showToast(t('toast.configuration.pasteCurrentPassword'), 'user-error')
+            return
+        }        
+        
+        if(validator.password(input) == false) {
+            window.showToast(t('toast.configuration.wrongPassword'), 'user-error')
+            return
+        }
+
+        const result = await withdraw(input)
+
+        if(result == false){
+            window.showToast(t('toast.configuration.failedWithdrawal'), 'system-error')
+            return
+        }
+
+        window.showToast(t('toast.configuration.successWithdrawal'), 'info')
+
+        removeAuth()
+
+        setUser(null)
+
+        navigate('/')
+    }
+
+
+    const onInputNickname = async(input) => {
+        
+        if(!validAuth(auth))
+            return
+
+        if(input == ''){
+            window.showToast(t('toast.configuration.pasteNickname'), 'user-error')
+            return
+        }
+
+        if(input == user.nickname)
+            return
+        
+        const resUser = await UserAPI.patchUser(auth.jwt, auth.user_id, {nickname: input})
+
+        if(resUser.success == false) {
+            window.showToast(t('toast.configuration.failedModifyingNickname'), 'system-error')
+            return
+        }        
+
+        window.showToast(t('toast.configuration.successModifyingNickname'), 'info')
+
+        user.nickname = input
+        setUser(structuredClone(user))
+        
+        reloadAuth(auth)
+    }
+
+
+    const withdraw = async(password) => {
+
+        if(!validAuth(auth))
+            return false
+    
+        const resPasswordCheck = await UserAPI.postUserPasswordCheck(auth.jwt, auth.user_id, password)
+        
+        if(resPasswordCheck.success == false)
+            return false
+
+        if(resPasswordCheck.payload.correct == false)
+            return false
+
+        const payload = {withdraw:true}
+
+        const resPatch = await UserAPI.patchUser(auth.jwt, auth.user_id, payload)
+
+        return resPatch.success        
+    }
+
+    
+    
+    return user ? (
+      <Vertical style={{width:'100%', height:'100%', alignItems:'center', justifyContent:'center'}}>
+        <div style={{position:'relative'}} onClick={onClickProfile}>
+            <ProfileImage user={user} size={256} style={{cursor:(isNotMobile() ? 'pointer' : 'auto')}}/>
+            {isNotMobile() && <Horizental style={{position:'absolute', zIndex:1, inset: 0, backgroundColor:'rgba(0, 0, 0, 0.4)', color:'white', borderRadius:'3px', justifyContent:'end', alignItems:'end'}}>
+                <LuImageUp size={64}/>
+            </Horizental>
+            }
+        </div>
+        
+        {imageFile && isModalImageCrop && <ImageCropModal ref={refImageCrop} isOpen={isModalImageCrop} onClose={()=>setIsModalImageCrop(false)} file={imageFile} onClickApply={onClickApply} keepRatio={1}></ImageCropModal>}
+        <VPad size={16}/>
+        <Vertical>
+            <Modal title={t('page.user.pasteNickname')} type={'input'} isCloseOutsideClick={false} defaultValue={user.nickname} maxLength={50} isOpen={isModalNickname} onClose={()=>setIsModalNickname(false)} onInput={onInputNickname}/>
+            <PrettyButton onClick={onClickUserNickname} type='default'>{t('page.user.setNickname')}</PrettyButton>
+            <VPad size={16}/>
+            <PrettyButton onClick={onClickPassword} type='default'>{t('page.user.changePassword')}</PrettyButton>
+            <PasswordModal isOpen={isModalPassword} onClose={() => setIsModalPassword(false)}/>
+            <VPad size={16}/>
+            <PrettyButton onClick={onClickLogout} type='warning'>{t('page.user.logout')}</PrettyButton>
+            <Modal title={t('page.user.wantlogout')} type={'yesno'} isOpen={isModalLogout} onResult={onResultLogout} onClose={()=>setIsModalLogout(false)}></Modal>
+            <VPad size={16}/>
+            <Modal title={t('page.user.pastePassowrd')} description={user.blog_id ? t('page.user.remainBlogThoughWithdraw') : null} type={'inputPassword'} isCloseOutsideClick={false} maxLength={20} isOpen={isModalWithdraw} onClose={()=>setIsModalWithdraw(false)} onInput={onInputPasswordForUser}/>
+            <PrettyButton onClick={onClickUserWithdraw} type='danger'>{t('page.user.withdrawUser')}</PrettyButton>
+        </Vertical>
+      </Vertical>) : <Spinner/>
+}

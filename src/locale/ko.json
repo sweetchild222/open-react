@@ -1,0 +1,450 @@
+{
+  "system":{
+    "title": "나뭇잎 이야기",
+    "yes": "네",
+    "no": "아니오",
+    "confirm": "확인",
+    "cancel": "취소",
+    "send": "보내기",
+    "select": "선택",
+    "apply": "적용",
+    "modify": "수정",
+    "upload": "업로드",
+    "post": "올리기",
+    "change": "변경",
+    "delete": "삭제",
+    "leave" : "나가기",
+    "next": "다음",
+    "prev": "이전",
+    "subscribe":" 구독",
+    "subscribed": "구독중",
+    "goback": "뒤로 가기",
+    "close": "닫기",
+    "more" : "더 보기",
+    "unknown": "알 수 없음",
+    "justNow":"방금",
+    "minuteAgo":"{{minute}}분 전",
+    "hourAgo":"{{hour}}시간 전",
+    "today":"오늘",
+    "yesterday":"어제"
+  },
+  "page":{
+      "user":{
+        "editUserConfiguration": "회원정보 수정",
+        "visitBlog": "블로그 구경하기",
+        "email": "이메일",
+        "sendVerificationCode": "인증코드 발송",
+        "confirmVerificationCode": "인증코드 확인",
+        "VerificationCode": "인증코드",
+        "passwordLength": "비밀번호 (8~20자)",
+        "registUser": "회원 가입",
+        "notAccessLoggedinUser": "로그인된 사용자는 접근 할 수 없습니다",
+        "sendTemporaryPassword": "임시 비밀번호 발송",
+        "currentPassword": "현재 비밀번호",
+        "passwordRequirements": "8~20자 사이 영어 문자열로 대소문자, 숫자, 특수문자 포함",
+        "newPassword": "새 비밀번호",
+        "confirmPassword": "비밀번호 확인",
+        "password": "비밀번호",
+        "login": "로그인",
+        "findPassword": "비밀번호 찾기",
+        "setNickname": "닉네임 설정",
+        "changePassword": "비밀번호 변경",
+        "logout": "로그아웃",
+        "withdrawUser": "회원 탈퇴",
+        "remainBlogThoughWithdraw": "회원을 탈퇴해도 블로그는 남습니다",
+        "pasteNickname": "닉네임을 입력하세요",
+        "wantlogout": "로그아웃 하시겠습니까?",
+        "pastePassowrd": "패스워드를 입력하세요"
+      },
+      "home":{
+        "login": "로그인",
+		    "myBlog": "내 블로그",
+		    "subscribedBlog": "구독한 블로그",
+		    "bookmarkArticle": "북마크한 글",
+		    "newestFirst": "최신순",
+		    "popularityFirst": "인기순",
+		    "commentFirst": "댓글순",
+        "order": "정렬",
+		    "subscribedArticle": "구독한 블로그의 글",
+		    "pasteSearchingText": "검색할 글을 입력하세요",
+		    "search": "검색",
+		    "noArticle": "글이 없습니다",
+		    "bookmark": "북마크"
+      },
+      "common":{
+        "errorOccured": "오류가 발생하였습니다",
+		    "contactSiteAdminisrator": "관리자에게 문의하세요(crazygun22@nate.com)",
+        "sessionTimeout": "세션이 만료 되었습니다. 다시 로그인 해주세요",
+		    "relogin": "로그인 다시 하기",
+		    "pageNotFound": "페이지를 찾을 수 없습니다"
+      },
+      "editor":{
+        "notAccess": "접근 할 수 없습니다",
+		    "writeArticle": "글을 작성해보세요",
+		    "temporarySave": "임시 저장",
+		    "temporarySavebeforeLeave": "나가기 전에 임시 저장 하시겠습니까?",
+		    "preview": "미리 보기",
+		    "wantLeavWithoutSave": "저장하지 않고 나가시겠습니까?",
+		    "title": "제목",
+		    "pasteTitle": "제목을 입력하세요",
+		    "category": "카테고리",
+		    "thumbnail": "썸네일",
+		    "wantDelete": "정말 삭제 하시겠습니까?",
+		    "completeModify": "수정 완료",
+		    "completeWrite": "작성 완료"
+      },
+
+      "blog":{
+        "recentArticle": "최근 글",
+        "failedLoad": "불러오기 실패",
+        "noArticleInCategory": "카테고리에 글이 없습니다",
+        "pasteBlogTitle": "블로그 제목을 입력하세요",
+        "modifyTitle": "제목 수정",
+        "modifyBackground": "배경 수정",
+        "noCategory":"카테고리가 없습니다",
+        "subscriber": "구독자",
+        "writeNewArticle": "새글 작성",
+        "daily": "일상",
+        "travel": "여행",
+        "cook": "요리",
+        "health": "건강",
+        "restaurant": "맛집",
+        "category": "카테고리",
+        "loading": "로딩중",
+        "modifyCategory": "카테고리 수정",
+        "noContent": "내용 없음",
+        "othersInCategory":"카테고리의 다른 글",
+        "wantDelete": "정말 삭제 하시겠습니까?",
+        "great": "좋아요",
+        "disgreat": "싫어요",
+        "pasteText": "글을 입력하세요",
+        "modified": "수정됨",
+        "reply": "답글",
+        "writeReply": "답글 작성",
+        "writeComment": "댓글 작성",
+        "comment": "댓글"
+      }
+  },
+  "toast":{
+      "appBarBlog":{
+        "requireLogin":"로그인 해주세요",
+        "cannotSubscribeInfo":"구독 정보 가져오기 실패",
+        "cancelSubscribed":"구독을 취소함",
+        "failedCancelSubscribed":"구독 취소 실패",
+        "successSubscribe":"구독 완료",
+        "failedSubscribe":"구독 실패"
+      },
+      "categories":{
+        "failedGettingCategory":"카테고리 가져오기 실패",
+        "noCategory":"카테고리가 없습니다",
+        "successDeletingCategory":"{{name}} 삭제됨",
+        "failedDeletingCategory":"{{name}} 삭제 실패",
+        "successAddingCategory":"{{name}} 추가됨",
+        "failedAddingCategory":"{{name}} 추가 실패",
+        "successChangingName":"{{name}}로 변경됨",
+        "failedChangingName":"{{name}}로 변경 실패",
+        "noChanged":"변경된 내용이 없습니다"
+      },
+      "createArticle":{
+        "failedWritingArticle":"작성 중인 글 가져오기 실패",
+        "tooMuchWritingArticle":"작성 중인 글이 너무 많습니다 ({{maxWritingCount}}개 이하)",
+        "failedSearchCategory":"카테고리 찾기 실패",
+        "failedCreatingArticle":"새 글 생성 실패"
+      },
+      "header":{
+        "unavailableFile":"사용할 수 없는 파일",
+        "failedSettingBlogImage":"블로그 이미지 설정 실패",
+        "noTitle":"제목이 없습니다",
+        "failedModifyBlogTitle":"블로그 제목 수정 실패",
+        "successModifyBlogTitle":"블로그 제목 수정됨",
+        "requireLogin":"로그인 해주세요",
+        "failedGettingSubscribe":"구독 정보 가져오기 실패",
+        "cancelSubscribed":"구독이 취소됨",
+        "failedCancelSubscribed":"구독 취소 실패",
+        "successSubscribe":"구독 완료",
+        "failedSubscribe":"구독 실패"
+      },
+      "articleItem":{
+        "failedWritingArticle":"작성 중인 글 가져오기 실패"
+      },
+      "configurationCategoryModal":{
+        "pasteCategoryName":"카테고리 이름을 입력하세요",
+        "nameMaxLength": "카테고리 이름은 최대 {{maxLength}}자 입니다",
+        "maxCreateCategory": "카테고리는 최대 {{maxCount}}개 까지 만들 수 있습니다",
+        "cannotDeleteCategory": "글이 있는 카테고리는 삭제 할 수 없습니다"
+      },
+      "recents":{
+        "failedGettingNewArticle":"최근 작성한 글 가져오기 실패"
+      },
+      "article":{
+        "failedModifyingArticle": "수정 중인 글 찾기 실패",
+		    "failedCreatingModifyingArticle": "수정 글 생성 실패",
+		    "successCreatingModifyingArticle": "수정할 글이 생성됨",
+		    "moveModifyingArticle": "수정 중인 글로 이동",
+		    "failedDeleteArticle": "삭제 실패",
+		    "successDeleteArticle": "삭제됨"
+      },
+      "bookmark":{
+        "requireLogin": "로그인 해주세요",
+		    "failedGettingBookmark": "북마크 가져오기 실패",
+		    "cancelBookmark": "북마크가 취소됨",
+		    "failedCancelBookmark": "북마크 취소 실패",
+		    "successBookmark": "북마크됨",
+		    "failedBookmark": "북마크 실패"
+      },
+      "articleGreat":{
+        "failedChanging": "{{great}}로 변경 실패",
+		    "successChanging": "{{great}}로 변경됨",
+		    "failedCancel": "{{great}} 취소 실패",
+		    "successCancel": "{{great}} 취소됨",
+		    "failedGreat": "{{great}} 실패",
+		    "successGreat": "{{great}}",
+		    "requireLogin": "로그인 해주세요",
+        "great":"좋아요",
+        "disgreat":"싫어요"
+      },
+      "commentList":{
+        "failedGettingComment": "댓글 가져오기 실패",
+        "failedDeletingComment": "댓글 삭제 실패",
+        "successDeletingComment": "댓글이 삭제됨",
+        "requireLogin": "로그인 해주세요",
+        "noText": "입력된 글이 없습니다",
+        "failedWritingComment": "댓글 작성 실패",
+        "failedWritingReply": "답글 작성 실패",
+        "successWritingComment": "댓글이 작성됨",
+        "noModified": "수정된 내용이 없습니다",
+        "failedModifying": "수정 실패",
+        "sucessWritingReply": "답글이 작성됨",
+        "successModifying": "수정됨"
+      },
+      "commentGreat":{
+        "failedChanging": "{{great}}로 변경 실패",
+		    "successChanging": "{{great}}로 변경됨",
+		    "failedCancel": "{{great}} 취소 실패",
+		    "successCancel": "{{great}} 취소됨",
+		    "failedGreat": "{{great}} 실패",
+		    "successGreat": "{{great}}",
+		    "requireLogin": "로그인 해주세요",
+        "great":"좋아요",
+        "disgreat":"싫어요"
+      },
+      "posting":{
+        "failedGettingCategory": "카테고리 가져오기 실패",
+		    "unavailableFile": "사용할 수 없는 파일",
+		    "failedSettingThumbnail": "썸네일 설정 실패",
+		    "noCategory": "카테고리가 설정되지 않았습니다",
+		    "pasteTitle": "제목을 입력하세요",
+		    "failedModifyingArticle": "글 수정 실패",
+		    "failedPostingArticle": "글 등록 실패",
+		    "modifiedArticle": "글이 수정됨",
+        "postedArticle":"글이 등록됨",
+        "failedDeleting":"삭제 실패",
+		    "successDeleting":"삭제됨",
+		    "failedDraftedSavingArticle":"임시 저장 실패",
+		    "successDraftedSavingArticle":"임시 저장됨"
+      },
+      "writer":{
+        "noText": "입력된 글이 없습니다",
+		    "successSavingDraft": "임시 저장됨",
+		    "failedSavingDraft": "임시 저장 실패",
+		    "failedDeleting": "삭제 실패",
+		    "successDeleting": "삭제됨"
+      },
+      "appBarMain":{
+        "requireLogin": "로그인 해주세요",
+		    "noAlarm": "알람이 없습니다",
+		    "noSubscribed": "구독한 블로그가 없습니다",
+		    "noBookmark": "북마크한 글이 없습니다"
+      },
+      "home":{
+        "failedGettingArticle": "글 가져오기 실패"
+      },
+      "sidebar":{
+        "requireLogin": "로그인 해주세요",
+        "noAlarm": "알람이 없습니다"
+      },
+      "configuration":{
+        "successLogout": "로그아웃 하였습니다",
+        "notSupportMobile": "프로필 설정은 데스크탑에서만 지원합니다",
+        "unavailableFile": "사용할 수 없는 파일",
+        "failedProfile": "프로필 설정 실패",
+        "pasteCurrentPassword": "현재 비밀번호를 입력하세요",
+        "wrongPassword": "비밀번호가 틀렸습니다",
+        "failedWithdrawal": "회원 탈퇴 실패",
+        "successWithdrawal": "회원을 탈퇴함",
+        "pasteNickname": "닉네임을 입력하세요",
+        "failedModifyingNickname": "닉네임 수정 실패",
+        "successModifyingNickname": "닉네임을 수정함"
+      },
+      "login":{
+        "failedLogin": "로그인 실패",
+		    "successLogin": "로그인됨"
+      },
+      "passwordModal":{
+        "pasteCurrentPassword": "현재 비밀번호를 입력하세요",
+		    "pasteNewPassword": "새 비밀번호를 입력하세요",
+		    "pasteConfirmPassword": "비밀번호 확인을 입력하세요",
+		    "notMatchPassword": "새 비밀번호와 비밀번호 확인이 일치하지 않습니다",
+		    "notMeetRequirementPassword": "새 비밀번호가 조건에 맞지 않습니다",
+		    "failedChangingPassword": "비밀번호 변경 실패",
+		    "successChangingPassword": "비밀번호가 변경됨"
+      },
+      "passwordReset":{
+        "invalidEmail": "잘못된 형식의 이메일입니다",
+		    "noEmail": "입력한 이메일을 찾을 수 없습니다",
+		    "successSendVerificationCode": "인증코드가 발송됨",
+		    "failedSendVerificationCode": "인증코드 발송 실패",		
+		    "wrongVerificationCode": "인증코드를 잘못 입력하였습니다",
+		    "successVerified": "인증됨",
+		    "failedVerified": "인증 실패",		
+		    "failedSendingTemporaryPassword": "임시 비밀번호 발송 실패",
+		    "successSendingTemporaryPassword": "임시 비밀번호 발송됨"
+      },
+      "regist":{
+        "invalidEmail": "잘못된 형식의 이메일입니다",
+        "successSendVerificationCode": "인증코드가 발송됨",
+        "failedSendVerificationCode": "인증코드 발송 실패",
+        "existRegistedUser": "이미 가입된 사용자입니다",
+        "wrongVerificationCode": "인증코드를 잘못 입력하였습니다",
+        "successVerified": "인증됨",
+        "failedVerified": "인증 실패",
+        "failedRegistUser": "회원 가입 실패",
+        "successRegistUser": "회원이 가입됨",
+        "existUser": "이미 존재하는 사용자입니다"
+      }
+  },
+  "mdxEditor":{
+    "frontmatterEditor": {
+      "title": "문서 프론트매터 편집",
+      "key": "키",
+      "value": "값",
+      "addEntry": "항목 추가"
+    },
+    "dialogControls": {
+      "save": "저장",
+      "cancel": "취소"
+    },
+    "uploadImage": {
+      "dialogTitle": "이미지 업로드",
+      "uploadInstructions": "로컬에서 이미지 업로드:",
+      "addViaUrlInstructions": "URL로 이미지 가져오기:",
+      "autoCompletePlaceholder": "이미지 소스를 선택하거나 붙여넣으세요",
+      "alt": "Alt:",
+      "title": "제목:",
+      "width": "너비:",
+      "height": "높이:"
+    },
+    "imageEditor": {
+      "deleteImage": "이미지 삭제",
+      "editImage": "이미지 편집"
+    },
+    "createLink": {
+      "url": "URL",
+      "urlPlaceholder": "URL을 선택하거나 붙여넣으세요",
+      "text": "앵커 텍스트",
+      "textTooltip": "링크에 표시될 텍스트",
+      "title": "제목",
+      "titleTooltip": "마우스를 올리면 표시되는 링크의 제목 속성",
+      "saveTooltip": "URL 설정",
+      "cancelTooltip": "변경 취소"
+    },
+    "linkPreview": {
+      "open": "새 창에서 {{url}} 열기",
+      "edit": "링크 URL 수정",
+      "copyToClipboard": "클립보드에 복사",
+      "copied": "복사됨!",
+      "remove": "링크 삭제"
+    },
+    "table": {
+      "deleteTable": "테이블 삭제",
+      "columnMenu": "열 메뉴",
+      "textAlignment": "텍스트 정렬",
+      "alignLeft": "왼쪽 정렬",
+      "alignCenter": "중심 정렬",
+      "alignRight": "오른쪽 정렬",
+      "insertColumnLeft": "왼쪽으로 열 추가",
+      "insertColumnRight": "오른쪽으로 열 추가",
+      "deleteColumn": "이 열 삭제",
+      "rowMenu": "행 메뉴",
+      "insertRowAbove": "위로 행 추가",
+      "insertRowBelow": "아래로 행 추가",
+      "deleteRow": "이 행 삭제"
+    },
+    "toolbar": {
+      "blockTypes": {
+        "paragraph": "단락",
+        "quote": "인용구",
+        "heading": "머릿말 {{level}}"
+      },
+      "blockTypeSelect": {
+        "selectBlockTypeTooltip": "블록 유형 선택",
+        "placeholder": "블록 유형"
+      },
+      "toggleGroup": "그룹 전환",
+      "removeBold": "굵은 글씨 제거",
+      "bold": "굵게",
+      "removeItalic": "기울임 제거",
+      "italic": "기울임",
+      "underline": "밑줄",
+      "removeUnderline": "밑줄 제거",
+      "removeInlineCode": "코드 형식 제거",
+      "inlineCode": "인라인 코드 형식",
+      "link": "링크 삽입",
+      "richText": "서식있는 텍스트",
+      "diffMode": "비교 모드",
+      "source": "소스 모드",
+      "admonition": "경고 블록 삽입",
+      "codeBlock": "코드 블록 삽입",
+      "editFrontmatter": "프론트매터 편집",
+      "insertFrontmatter": "프론트매터 삽입",
+      "image": "이미지 삽입",
+      "insertSandpack": "샌드팩 삽입",
+      "table": "표 삽입",
+      "thematicBreak": "수평선 삽입",
+      "bulletedList": "글머리 기호 목록",
+      "numberedList": "번호가 매겨진 목록",
+      "checkList": "체크 리스트",
+      "deleteSandpack": "이 코드 블록 삭제",
+      "undo": "취소 {{shortcut}}",
+      "redo": "다시 {{shortcut}}",
+      "highlight": "강조",
+      "removeHighlight": "강조 제거",
+      "strikethrough": "취소선",
+      "subscript":"서브스크립트",
+      "superscript":"슈서스크립트",
+      "youtube":"유튜브 삽입",
+      "imagefile":"이미지 파일 삽입",
+      "imagelink":"이미지 링크 삽입"
+    },
+    "youtube":{
+      "invalidUrl":"URL이 잘못되었습니다",
+      "pasteUrl":"유튜브 URL을 입력하세요"
+    },
+    "imagefile":{
+      "cannotUpload":"파일을 업로드할 수 없습니다",
+      "abnormalFile":"파일을 사용할 수 없습니다"
+    },
+    "imagelink":{
+      "pasteLink":"이미지 링크를 입력하세요",
+      "title":"이미지 제목",
+      "alternative":"이미지가 없을 경우 대체 이름",
+      "wrongUrl":"URL 형식이 잘못되었습니다"
+    },
+    "admonitions": {
+      "note": "메모",
+      "tip": "팁",
+      "danger": "위험",
+      "info": "정보",
+      "caution": "주의",
+      "changeType": "경고 타입을 선택해주세요.",
+      "placeholder": "경고 타입"
+    },
+    "codeBlock": {
+      "language": "코드 블록 언어",
+      "selectLanguage": "코드 블록 언어 선택"
+    },
+    "contentArea": {
+      "editableMarkdown": "편집 가능한 마크다운"
+    }
+  }
+}

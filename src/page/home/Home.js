@@ -1,0 +1,293 @@
+import {useState, useEffect, useContext} from "react";
+
+import * as ArticleAPI from '@rest/ArticleAPI.js'
+import * as SubscribeAPI from '@rest/SubscribeAPI.js'
+import AuthContext from "@util/AuthContext.js";
+import SmoothScroll from "@util/SmoothScroll.js";
+import {isMobile, isNotMobile} from "@util/DeviceType.js";
+import * as UserRepository from "@util/UserRepository.js";
+import PrettyButton from "@gui/PrettyButton.js";
+import Spinner from "@gui/Spinner.js";
+import {Vertical, Horizental} from "@gui/Flex.js";
+import Modal from "@gui/Modal.js";
+import {VPad, HPad} from "@gui/Pad.js";
+import { useTranslation } from 'react-i18next';
+import packageJson from '../../../package.json';
+
+import SelectOrderModal from "./SelectOrderModal.js";
+
+import { GrNext } from "react-icons/gr";
+import { GrPrevious } from "react-icons/gr";
+
+import './Home.css'
+import ArticleItem from "./ArticleItem.js";
+
+
+export default function() { 
+
+  const { t } = useTranslation()
+  
+  const {auth, validAuth} = useContext(AuthContext)
+  const [articles, setArticles] = useState(null)
+  const [isSpinner, setIsSpinner] = useState(false)  
+  const [offset, setOffset] = useState(0)
+  const [blogIds, setBlogIds] = useState(null)
+  const [currentType, setCurrentType] = useState(0) //0:최신순, 1:인기순, 2:댓글 많은 순, 3:구독한 글, 4:검색
+  const [keyword, setKeyword] = useState(null)
+
+  const [isSearchModal, setIsSearchModal] = useState(null)
+
+  const [isOpenSelectCategoryModal, setIsOpenSelectCategoryModal] = useState(false)
+  
+  const countPerPage = 6
+
+  useEffect(()=>{
+    
+    document.title = t('system.title')
+
+  }, [])
+
+  useEffect(() => {
+        
+    const query = getQueryByType(currentType, offset, keyword)
+
+    if(query == null)
+      return
+
+    setIsSpinner(true)
+
+      loadArticles(query).then((articles) => {
+
+        setIsSpinner(false)
+        
+        if(articles == null){
+          window.showToast(t('toast.home.failedGettingArticle'), 'system-error')
+          return
+        }
+        
+        setArticles(articles)
+    })
+
+  }, [currentType, offset, keyword])
+  
+
+  useEffect(()=>{
+
+    if(!validAuth(auth)){
+      setBlogIds(null)
+      return
+    }
+    
+    SubscribeAPI.getSubscribe('user_id=' + auth.user_id).then(res=>{
+
+      if(res.success == false)
+        return
+      
+      const blog_ids = res.payload.map(item => item.blog_id)
+
+      setBlogIds(blog_ids)
+    })
+
+  }, [auth])
+
+
+  const loadArticles = async(query) => {
+
+    const resArticles = await ArticleAPI.getArticles(query)
+        
+    if(resArticles.success == false)
+      return null
+
+    const articles = resArticles.payload
+      
+    const userIDList = articles.map(article => article.user_id)
+
+    const resUsers = await UserRepository.getByIDList([...new Set(userIDList)])
+                          
+    if(resUsers == null)
+      return null
+
+    articles.forEach((item, index) => {
+      item.user = resUsers.find(user => (user.id == item.user_id))
+    })
+
+    return articles
+  }
+
+
+  const getQueryByType = (currentType, offset, keyword) => {
+    
+    if(currentType == 0)
+      return 'offset=' + offset + '&limit=' + countPerPage + '&order_type=post_at&order=1'
+    else if(currentType == 1)
+      return 'offset=' + offset + '&limit=' + countPerPage + '&order_type=like_count&order=1'
+    else if(currentType == 2)
+      return 'offset=' + offset + '&limit=' + countPerPage + '&order_type=comment_count&order=1'
+    else if(currentType == 3){
+      
+      if(blogIds == null || blogIds.length == 0)
+          return null
+        
+      return 'offset=' + offset + '&limit=' + countPerPage + '&order_type=post_at&order=1&blog_id=' + blogIds
+    }
+    else if(currentType == 4)
+      return 'offset=' + offset + '&limit=' + countPerPage + '&order_type=post_at&order=1&keyword=' + keyword
+  }
+
+
+  const onClickNewest = async()=> {
+            
+    setCurrentType(0)
+    setOffset(0)
+  }
+
+  const onClickFavorite = async()=>{
+    
+    setCurrentType(1)
+    setOffset(0)
+  }
+
+  const onClickManyComment = async()=>{
+    
+    setCurrentType(2)
+    setOffset(0)
+  }
+
+
+  const onClickSubscribe = async()=> {
+
+    setCurrentType(3)
+    setOffset(0)
+  }
+
+  const onClickPrev = async() =>{
+
+    if(offset - countPerPage < 0)
+      return
+
+    setOffset(offset => offset - countPerPage)
+
+    if(isMobile())
+      SmoothScroll(0)
+  }
+
+
+  const onClickNext = async() => {
+
+    setOffset(offset => offset + countPerPage)
+
+    if(isMobile())
+      SmoothScroll(0)
+  }
+
+
+  const onKeyDown = (e) => {
+
+      if(e.key === 'Enter'){
+
+        if(search.value.length > 0){
+          const keyword = search.value
+          search.value = ''
+          setKeyword(keyword)
+          setCurrentType(4)
+          setOffset(0)
+        }
+      }
+  }
+
+  
+  const onClickSearch = (e) => {
+
+    if(search.value.length > 0){
+      const keyword = search.value
+      search.value = ''
+      setKeyword(keyword)
+      setCurrentType(4)
+      setOffset(0)
+    }
+  }
+
+
+  const onInputSearchText = async(keyword) => {
+
+    if(keyword.length > 0){
+        setKeyword(keyword)
+        setCurrentType(4)
+        setOffset(0)
+    }
+  }
+
+
+  const onSelectOrder = (order) =>{
+
+    if(order.index != 4){
+      setCurrentType(order.index)
+      setOffset(0)
+    }
+
+    if(order.index == 4)
+      setIsSearchModal(true)
+  }
+
+
+  const orderButtonText = () => {
+
+    if(currentType == 0)
+      return t('page.home.newestFirst')
+    else if(currentType == 1)
+      return t('page.home.popularityFirst')
+    else if(currentType == 2)
+      return t('page.home.commentFirst')
+    else if(currentType == 3)
+      return t('page.home.subscribedArticle')
+    else if(currentType == 4)
+      return t('page.home.search')
+  }
+
+  
+  return (
+    <Vertical style={{width:'100%', paddingLeft:'8px', paddingRight:'8px', marginTop:(isMobile() ? '64px' : '0px')}}>
+      <VPad size={8}/>
+        <Horizental style={{alignItems:'center'}}>
+          {isNotMobile() && <PrettyButton onClick={onClickNewest} style={{width:'fit-content'}}>{t('page.home.newestFirst')}</PrettyButton>}
+          {isNotMobile() && <HPad size={8}/>}
+          {isNotMobile() && <PrettyButton onClick={onClickFavorite} style={{width:'fit-content'}}>{t('page.home.popularityFirst')}</PrettyButton>}
+          {isNotMobile() && <HPad size={8}/>}
+          {isNotMobile() && <PrettyButton onClick={onClickManyComment} style={{width:'fit-content'}}>{t('page.home.commentFirst')}</PrettyButton>}
+          {isMobile() && <PrettyButton type={'success'} onClick={()=>setIsOpenSelectCategoryModal(true)}>{orderButtonText()}</PrettyButton>}
+          {isMobile() && <SelectOrderModal isOpen={isOpenSelectCategoryModal} onClose={()=>setIsOpenSelectCategoryModal(false)} onSelect={onSelectOrder} isSubscribedBlog={blogIds && blogIds.length > 0}></SelectOrderModal>}
+          {isMobile() && <Modal title= {t('page.home.pasteSearchingText')} type={'input'} isCloseOutsideClick={false} isOpen={isSearchModal} maxLength={256} onInput={onInputSearchText} onClose={()=>setIsSearchModal(false)}></Modal>}
+          {isNotMobile() && blogIds && blogIds.length > 0 && <HPad size={8}/>}
+          {isNotMobile() && blogIds && blogIds.length > 0 && <PrettyButton onClick={onClickSubscribe} style={{width:'fit-content'}}>{t('page.home.subscribedArticle')}</PrettyButton>}
+          <HPad size={8}/>
+          <div style={{flex:'1'}}/>
+          {isMobile() && <div>{'v' + packageJson.version}</div>}
+          {isNotMobile() && <input id="search" placeholder={t('page.home.search')} maxLength="256" style={{width:'100%', minWidth:'64px', maxWidth:'256px'}} onKeyDown={onKeyDown}></input>}
+          {isNotMobile() && <HPad size={8}/>}
+          {isNotMobile() && <PrettyButton  type='success' onClick={onClickSearch} style={{width:'fit-content'}}>{t('page.home.search')}</PrettyButton>}
+        </Horizental>
+      <VPad size={8}/>
+      <div style={{flex:'1', position:'relative'}}>
+        {articles && (
+          articles.length > 0 ? 
+          (<Vertical style={{width:'100%'}}>
+            <div className={'dynamicColumnContainer'} style={{width:'100%', marginTop:'0px', marginBottom:'16px'}}>
+              {articles.map((data, index) => <ArticleItem key={data.id} article={data} style={{marginBottom:'16px'}}/>)}
+            </div>
+          </Vertical>) : 
+          (<Vertical style={{alignItems:'center', width:'100%', justifyContent:'center', height:'100%'}}>
+            {<img src={'/image/empty.png'} style={{width:'128px', height: '128px', marginTop:'64px', marginBottom:'16px'}}/>}
+            {<div style={{fontSize:'18px', marginBottom:'32px'}}>{t('page.home.noArticle')}</div>}
+          </Vertical>)
+        )}
+        {isSpinner && <Spinner type={'absolute'}/>}
+      </div>
+      {articles && <Horizental style={{alignSelf:'center', alignItems:'center'}}>
+        <PrettyButton disabled={offset == 0} onClick={onClickPrev} style={{width:'64px'}}> {<GrPrevious size={16}/>}</PrettyButton>
+        <HPad size={64}/>
+        <PrettyButton disabled={articles.length == 0} onClick={onClickNext} style={{width:'64px'}}> {<GrNext size={16}/>}</PrettyButton>
+      </Horizental>}
+      <VPad size={32}/>
+    </Vertical>
+  )
+}

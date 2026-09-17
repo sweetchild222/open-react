@@ -1,0 +1,318 @@
+
+import {useNavigate, useLocation} from 'react-router-dom';
+import { useContext, useState, useRef, useEffect} from 'react'
+
+import PrettyButton from '@gui/PrettyButton.js'
+import Modal from "@gui/Modal.js";
+import ImageCropModal from '@gui/ImageCropModal.js'
+import StateProgsImage from "@gui/StateProgsImage.js";
+import Spinner from "@gui/Spinner.js";
+import {Vertical, Horizental} from "@gui/Flex.js";
+import {VPad, HPad} from "@gui/Pad.js";
+import AuthContext from "@util/AuthContext.js";
+import ImagePicker from "@util/ImagePicker.js";
+import {blobFromCanvas} from "@util/ImageUtil.js";
+import MarkdownToHtml from '@util/MarkdownToHtml.js'
+import GoLogin from "@page/common/GoLogin.js";
+import * as BlobAPI from '@rest/BlobAPI.js'
+import * as ArticleAPI from '@rest/ArticleAPI.js'
+import * as CategoryAPI from '@rest/CategoryAPI.js'
+import { useTranslation } from 'react-i18next';
+
+import ExtractHead from "./ExtractHead.js";
+
+export default function() {
+    
+    const location = useLocation()
+
+    const { t }  = useTranslation()
+
+    const state = location.state
+
+    if(state == null)
+        return (<div>{t('page.editor.notAccess')}</div>)
+    
+    const refTitle = useRef(null)    
+    const refImageCrop = useRef(null)
+
+    const [isSpinner, setIsSpinner] = useState(false)
+    const [imageFile, setImageFile] = useState(null)
+    
+    const [thumbnail, setThumbnail] = useState(state.thumbnail != '' ? state.thumbnail : '')
+    const [title, setTitle] = useState(state.title)
+    const [isImageCropModalOpen, setIsImageCropModalOpen] = useState(false)
+    const [categories, setCategories] = useState(null)
+    const {auth, validAuth} = useContext(AuthContext)
+    const [isConfirmDeleteModalOpen, setIsConfirmDeleteModalOpen] = useState(false)
+    
+    const [selectedCategoryIndex, setSelectedCategoryIndex] = useState(0)
+
+
+
+    const onChangeCategory = (e) => {
+
+        setSelectedCategoryIndex(e.target.options.selectedIndex)
+    }
+
+
+    
+    const navigate = useNavigate()
+
+    useEffect(() => {
+
+        getCategory().then((categories)=> {
+            
+            if(categories == null || categories.length == 0){
+                window.showToast(t('toast.posting.failedGettingCategory'), 'system-error')
+                return
+            }
+        
+            setCategories(categories)
+
+            const index = categories.findIndex(categorie => categorie.id === state.category_id)
+
+            if(index != -1)
+                setSelectedCategoryIndex(index)
+        })
+
+    }, [])
+
+    useEffect(()=>{
+
+        if(refTitle.current)
+            refTitle.current.focus()
+
+
+    },[refTitle])
+
+    
+
+    const getCategory = async() => {
+
+        const res = await CategoryAPI.getCategories(auth.blog_id)
+        
+        if(res.success == false)
+            return null
+
+        if(res.payload.length == 0)
+            return null
+    
+        res.payload.sort((a, b)=> {
+
+            return b.is_default - a.is_default
+        })
+
+        return res.payload
+    }
+
+
+    const postImage = async(blob) => {
+            
+        const formData = new FormData()
+        formData.append('image', blob)
+
+        const resArticleImage = await BlobAPI.postArticleImage(auth.jwt, formData)
+
+        if(resArticleImage.success == false)
+            return null
+        
+        const url = process.env.API_TARGET + '/api/blob/article/' + resArticleImage.payload.id
+
+        return url
+    }
+
+
+    const onClickThumbnail = async() => {
+
+        const imageFile = await ImagePicker()
+
+        if(imageFile == null)
+            return
+        
+        if(imageFile.format == 'unknown'){
+            window.showToast(t('toast.posting.unavailableFile'), 'user-error')
+            return
+        }
+
+        setImageFile(imageFile.file)
+
+        setIsImageCropModalOpen(true)
+    }
+
+
+    const onClickThumbnailApply = async() => {
+
+        if(!refImageCrop.current)
+            return
+        
+        const dWidth = 960
+        const dHeight = 960
+
+        const canvas = await refImageCrop.current.export(dWidth, dHeight)
+        
+        const blob = await blobFromCanvas(canvas)
+
+        const formData = new FormData()
+        formData.append('image', blob)
+
+        const res = await BlobAPI.postArticleThumbnail(auth.jwt, formData)
+
+        if(res.success == false){
+            window.showToast(t('toast.posting.failedSettingThumbnail'), 'system-error')
+            return
+        }
+
+        const url = process.env.API_TARGET + '/api/blob/article/thumbnail/' + res.payload.id
+
+        setThumbnail(url)
+        setIsImageCropModalOpen(false)
+    }
+
+
+    const onClickPost = async() => {
+        
+        if(refTitle.current == null)
+            return null
+
+        if(categories == null) {
+            window.showToast(t('toast.posting.noCategory'), 'user-error')
+            return
+        }
+
+        if(refTitle.current.value.trim().length === 0){
+            window.showToast(t('toast.posting.pasteTitle'), 'user-error')
+            return
+        }        
+
+        const article_id = state.source_id != null ? state.source_id : state.id
+        const title = refTitle.current.value
+        const head = ExtractHead(MarkdownToHtml(state.content), 256)
+        const content = state.content
+        const category_id = categories[selectedCategoryIndex].id
+        const posted = 1
+            
+        const res = await putArticle(article_id, title, head, content, thumbnail, posted, category_id)
+
+        if(res.success == false){
+            window.showToast(state.source_id != null ?  t('toast.posting.failedModifyingArticle') : t('toast.posting.failedPostingArticle'), 'system-error')
+            return
+        }
+
+        window.showToast(state.source_id != null ? t('toast.posting.modifiedArticle') : t('toast.posting.postedArticle'), 'info')
+
+        if(state.source_id != null)
+            await deleteArticle(state.id)
+        
+        navigate(-2)
+    }
+
+
+    const deleteArticle = async(id) => {
+
+        await ArticleAPI.deleteArticle(auth.jwt, id)
+    }
+
+
+    const onClickDelete = async() => {
+
+        setIsConfirmDeleteModalOpen(true)
+    }
+
+
+    const putArticle = async(article_id, title, head, content, thumbnail, posted, category_id) => {
+        
+        const payload = {
+            title:title,
+            head:head,
+            content:content,            
+            posted:posted,
+            thumbnail:thumbnail,
+            category_id:category_id
+        }
+
+        setIsSpinner(true)
+        
+        const res = await ArticleAPI.putArticle(auth.jwt, article_id, payload)
+
+        setIsSpinner(false)
+
+        return res
+    }
+
+
+    const onResultConfirmDelete = async(result) =>{
+
+        if(result == true){
+
+            const res = await ArticleAPI.deleteArticle(auth.jwt, state.id)
+            
+            if(res.success == false){
+                window.showToast(t('toast.posting.failedDeleting'), 'system-error')
+                return
+            }
+
+            window.showToast(t('toast.posting.successDeleting'), 'info')
+
+            navigate(-2)
+        }
+    }
+
+
+    const onClickSave = async() =>{
+
+        if(refTitle.current == null)
+            return null
+
+        if(categories == null) {
+            window.showToast(t('toast.posting.noCategory'), 'user-error')
+            return
+        }
+
+        const article_id = state.id
+        const title = refTitle.current.value
+        const head = ExtractHead(MarkdownToHtml(state.content), 256)
+        const content = state.content
+        const category_id = categories[selectedCategoryIndex].id
+        const posted = 0
+        
+        const res = await putArticle(article_id, title, head, content, thumbnail, posted, category_id)
+
+        if(res.success == false){
+            window.showToast(t('toast.posting.failedDraftedSavingArticle'), 'system-error')
+            return
+        }
+
+        window.showToast(t('toast.posting.successDraftedSavingArticle'), 'info')
+    }
+
+
+    return validAuth(auth) ? (
+        <Vertical style={{margin:'auto', height:'100%', alignItems:'start', position:'relative'}}>
+            {isSpinner && <Spinner type={'absolute'}/>}
+            <label htmlFor='input_title'>{t('page.editor.title')}</label>
+            <VPad size={4}/>
+            <input ref={refTitle} id='input_title' placeholder={t('page.editor.pasteTitle')} type='text' defaultValue={title} style={{width:'100%', boxSizing:'border-box'}}/>
+            <VPad size={16}/>
+            <label htmlFor='input_category'>{t('page.editor.category')}</label>
+            <VPad size={4}/>
+            <select style={{width:'100%'}} id='input_category' value={categories ? categories[selectedCategoryIndex].name : ''} onChange={onChangeCategory}>
+                {categories && categories.map((data, index) => <option key={data.id}>{data.name}</option>)}
+            </select>
+            <VPad size={16}/>
+            <label onClick={onClickThumbnail}>{t('page.editor.thumbnail')}</label>
+            <VPad size={4}/>
+            <StateProgsImage src={thumbnail} onClick={onClickThumbnail} width={384} height={384} style={{alignSelf:'center'}}/>
+            {imageFile && isImageCropModalOpen && <ImageCropModal ref={refImageCrop} isOpen={isImageCropModalOpen} onClose={()=>setIsImageCropModalOpen(false)} file={imageFile} onClickApply={onClickThumbnailApply} keepRatio={1}></ImageCropModal>}
+            <VPad size={16}/>
+            <Horizental style={{width:'100%'}}>
+                <PrettyButton type='danger' onClick={onClickDelete} style={{width:'64px'}}>{t('system.delete')}</PrettyButton>
+                <HPad size={64}/>
+                <PrettyButton type='success' onClick={onClickSave} style={{flex:'1'}}>{t('page.editor.temporarySave')}</PrettyButton>
+                <Modal title={t('page.editor.wantDelete')} type={'yesno'} isOpen={isConfirmDeleteModalOpen} onResult={onResultConfirmDelete} onClose={()=>setIsConfirmDeleteModalOpen(false)}></Modal>
+                <HPad size={16}/>
+                <PrettyButton type='success' onClick={onClickPost} style={{flex:'1'}}>{state.source_id != null ? t('page.editor.completeModify'): t('page.editor.completeWrite')}</PrettyButton>
+            </Horizental>
+        </Vertical>
+        ) : (<GoLogin/>)
+}
+

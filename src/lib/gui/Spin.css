@@ -1,0 +1,26 @@
+.spin::after {
+  content: "";
+  position: absolute;
+  width: var(--radius--, 16px);
+  height: var(--radius--, 16px);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+  border: var(--spinWidth--, 4px) solid transparent;
+  border-top-color: var(--spinColor--, rgba(95, 158, 160, 0.5));
+  border-radius: 50%;
+  animation: spin_animation 1s ease infinite;
+}
+
+
+@keyframes spin_animation {
+  from {
+    transform: rotate(0turn);
+  }
+
+  to {
+    transform: rotate(1turn);
+  }
+}

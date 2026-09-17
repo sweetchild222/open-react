@@ -1,0 +1,230 @@
+import {useState, useContext, useEffect} from "react";
+import {useNavigate} from 'react-router-dom';
+
+import * as ArticleGreatAPI from '@rest/ArticleGreatAPI.js'
+import AuthContext from "@util/AuthContext.js";
+import CountWithUnit from "@util/CountWithUnit.js";
+import PrettyButton from "@gui/PrettyButton.js";
+import {Horizental} from "@gui/Flex.js";
+import {HPad} from "@gui/Pad.js";
+import { useTranslation } from 'react-i18next';
+
+import { FaRegThumbsDown } from "react-icons/fa";
+import { FaRegThumbsUp } from "react-icons/fa";
+import { FaThumbsDown } from "react-icons/fa";
+import { FaThumbsUp } from "react-icons/fa";
+
+export default function({article_id, like_count, dislike_count, style}) {
+
+    const { t } =  useTranslation()
+
+    const [isLikeLoading, setIsLikeLoading] = useState(false)
+    const [isDislikeLoading, setIsDislikeLoading] = useState(false)
+    
+    const [likeCount, setLikeCount] = useState(like_count)
+    const [dislikeCount, setDislikeCount] = useState(dislike_count)    
+    const {auth, validAuth} = useContext(AuthContext)
+    const [currentGreat, setCurrentGreat] = useState(null)
+    const navigate = useNavigate()
+
+
+    useEffect(()=>{
+
+        if(!validAuth(auth))
+            return
+
+        getGreat(auth.user_id, article_id).then(res=>{
+
+            if(res.success == false)
+                return
+
+            if(res.payload.length > 0)
+                setCurrentGreat(res.payload[0].great)
+            else
+                setCurrentGreat(0)
+        })
+
+    },[article_id])
+
+
+
+
+    const postGreat = async(jwt, user_id, article_id, like) =>{
+
+        const payload = {
+            user_id:user_id,
+            article_id:article_id,
+            great:like
+        }
+
+        const res = await ArticleGreatAPI.postArticleGreat(jwt, payload)
+
+        return res
+    }
+
+
+    const getGreat = async(user_id, article_id) =>{
+
+        const query = 'user_id=' + user_id + '&article_id=' + article_id
+
+        const res = await ArticleGreatAPI.getArticleGreat(query)
+
+        return res
+    }
+
+
+    const deleteGreat = async(jwt, id) =>{
+
+        const res = await ArticleGreatAPI.deleteArticleGreat(jwt, id)
+
+        return res
+    }
+
+
+    const patchGreat = async(jwt, id, great) =>{
+
+        const payload = {
+            great:great
+        }
+        
+        const res = await ArticleGreatAPI.patchArticleGreat(jwt, id, payload)
+
+        return res
+
+    }
+
+
+    const updateGreat = async(great) =>{
+
+        const transGreat = t('toast.articleGreat.great')
+        const transDisgreat = t('toast.articleGreat.disgreat')
+        
+        const resGreat = await getGreat(auth.user_id, article_id)
+
+        if(resGreat.success == false)
+            return false
+
+        if(resGreat.payload.length > 0){
+
+            if(resGreat.payload[0].great != great) {
+                
+                const res = await patchGreat(auth.jwt, resGreat.payload[0].id, great)
+
+                
+
+                if(res.success == false){
+                    window.showToast(t('toast.articleGreat.failedChanging', {great:(great == 1 ? transDisgreat : transGreat)}), 'system-error')
+                    return false
+                }
+
+                if(great == 1){
+                    setCurrentGreat(1)
+                    setLikeCount(item => item + 1)
+                    setDislikeCount(item => item - 1)
+                }
+                else if(great == -1){
+                    setCurrentGreat(-1)
+                    setLikeCount(item => item - 1)
+                    setDislikeCount(item => item + 1)
+                }
+                else 
+                    return false
+
+                window.showToast(t('toast.articleGreat.successChanging', {great:(great == 1 ? transDisgreat : transGreat)}), 'info')
+                return true
+
+            }else {
+
+                const res = await deleteGreat(auth.jwt, resGreat.payload[0].id)
+
+                if(res.success == false){
+                    window.showToast(t('toast.articleGreat.failedCancel', {great:(great == 1 ? transGreat : transDisgreat)}), 'system-error')
+                    return false
+                }
+
+                if(great == 1){
+                    setCurrentGreat(0)
+                    setLikeCount(item => item - 1)
+                }
+                else if(great == -1){
+                    setCurrentGreat(0)
+                    setDislikeCount(item => item - 1)
+                }
+                else 
+                    return false
+
+                window.showToast(t('toast.articleGreat.successCancel', {great:(great == 1 ? transGreat : transDisgreat)}), 'info')
+                return true
+            }
+        }
+        else{
+            
+            const res = await postGreat(auth.jwt, auth.user_id, article_id, great)
+
+            if(res.success == false){
+                window.showToast(t('toast.articleGreat.failedGreat', {great:(great == 1 ? transGreat : transDisgreat)}), 'system-error')
+                return false
+            }
+            
+            if(great == 1){
+                setCurrentGreat(1)
+                setLikeCount(item => item + 1)
+            }
+            else if(great == -1){
+                setCurrentGreat(-1)
+                setDislikeCount(item => item + 1)
+            }
+            else
+                return false
+            
+            window.showToast(t('toast.articleGreat.successGreat', {great:(great == 1 ? transGreat : transDisgreat)}), 'info')
+            return true
+        }
+    }
+
+
+    const onClickGreatLike = async() =>{
+
+        if(!validAuth(auth)){
+            window.showToast(t('toast.articleGreat.requireLogin'), 'info')
+            navigate('/account', {state:{comback:true}})
+            return
+        }
+        setIsLikeLoading(true)
+        await updateGreat(1)
+        setIsLikeLoading(false)
+    }
+
+
+    const onClickGreatDislike = async() =>{
+
+        if(!validAuth(auth)){
+            window.showToast(t('toast.articleGreat.requireLogin'), 'info')
+            navigate('/account', {state:{comback:true}})
+            return
+        }
+
+        setIsDislikeLoading(true)
+        await updateGreat(-1)
+        setIsDislikeLoading(false)
+    }
+    
+        
+    return (
+            <Horizental style={{justifyContent:'center', alignItems:'center', ...style}}>
+                <PrettyButton isLoading={isLikeLoading} disabled={isDislikeLoading} type={'transparent'} title={t('page.blog.great')} style={{color:'black', display: 'flex', flexDirection: 'row'}} onClick={onClickGreatLike}>
+                    {currentGreat != null && currentGreat == 1 && <FaThumbsUp size={22}/>}
+                    {(currentGreat == null || (currentGreat != null && (currentGreat != 1))) && <FaRegThumbsUp size={22}/>}
+                    <HPad size={4}/>
+                    <div>{CountWithUnit(likeCount)}</div>
+                </PrettyButton>
+                <HPad size={16}/>
+                <PrettyButton isLoading={isDislikeLoading} disabled={isLikeLoading} type={'transparent'} title={t('page.blog.disgreat')} style={{color:'black', display: 'flex', flexDirection: 'row'}} onClick={onClickGreatDislike}>
+                    {currentGreat != null && currentGreat == -1 && <FaThumbsDown size={22}/>}
+                    {(currentGreat == null || (currentGreat != null && (currentGreat != -1))) && <FaRegThumbsDown size={22}/>}
+                    <HPad size={4}/>
+                    <div>{CountWithUnit(dislikeCount)}</div>
+                </PrettyButton>
+            </Horizental>
+        )
+}

@@ -1,0 +1,108 @@
+import {useState, useContext, useEffect} from "react";
+import {useNavigate} from 'react-router-dom';
+
+import * as BookmarkAPI from '@rest/BookmarkAPI.js'
+import AuthContext from "@util/AuthContext.js";
+import CountWithUnit from "@util/CountWithUnit.js";
+import {Horizental} from "@gui/Flex.js";
+import PrettyButton from "@gui/PrettyButton.js";
+import {HPad} from "@gui/Pad.js";
+import { useTranslation } from 'react-i18next';
+
+import { IoMdHeart } from "react-icons/io";
+import { IoIosHeartEmpty } from "react-icons/io";
+
+
+export default function({article_id, count}) {
+
+    const [isBookmarkLoading, setIsBookmarkLoading] = useState(false)
+    const {auth, validAuth} = useContext(AuthContext)
+    const [isBookmark, setIsBookmark] = useState(null)
+    const [bookmarkCount, setBookmarkCount] = useState(count)
+    const { t } = useTranslation()
+
+    const navigate = useNavigate()
+
+    useEffect(()=>{
+
+        if(!validAuth(auth)){
+            setIsBookmark(false)
+            return
+        }
+
+        BookmarkAPI.getUserBookmark(auth.jwt, auth.user_id, 'article_id=' + article_id).then(res => {
+            
+            if(res.success == false)
+                return
+
+            setIsBookmark(res.payload.length > 0)
+        })
+
+    }, [auth, article_id])
+
+
+
+    const onClickBookmark = async() => {
+
+        if(!validAuth(auth)){
+            window.showToast(t('toast.bookmark.requireLogin'), 'info')
+            navigate('/account', {state:{comback:true}})
+            return
+        }
+
+        setIsBookmarkLoading(true)
+
+        const res = await BookmarkAPI.getUserBookmark(auth.jwt, auth.user_id, 'article_id=' + article_id)
+
+        if(res.success == false){
+            setIsBookmarkLoading(false)
+            window.showToast(t('toast.bookmark.failedGettingBookmark'), 'system-error')
+            return
+        }
+
+        if(res.payload.length > 0){
+            
+            const resDelete = await BookmarkAPI.deleteBookmark(auth.jwt, res.payload[0].id)
+            setIsBookmarkLoading(false)
+
+            if(resDelete.success == true){
+                setIsBookmark(false)
+                setBookmarkCount(count => count - 1)
+                window.showToast(t('toast.bookmark.cancelBookmark'), 'info')
+            }
+            else
+                window.showToast(t('toast.bookmark.failedCancelBookmark'), 'system-error')
+        }
+        else{
+
+            const payload = {
+
+                article_id:article_id,
+                user_id:auth.user_id
+            }
+
+            const resPost = await BookmarkAPI.postBookmark(auth.jwt,  payload)
+            setIsBookmarkLoading(false)
+
+            if(resPost.success == true){
+                setIsBookmark(true)
+                setBookmarkCount(count => count + 1)
+                window.showToast(t('toast.bookmark.successBookmark'), 'info')
+            }
+            else{
+                window.showToast(t('toast.bookmark.failedBookmark'), 'system-error')
+            }
+        }
+    }
+    
+    
+    return ( isBookmark != null ? <Horizental style={{alignItems:'center'}}>
+                <PrettyButton type={'transparent'} isLoading={isBookmarkLoading} style={{color:'black'}} onClick={onClickBookmark}>
+                    {isBookmark ? <IoMdHeart size={22}/> : <IoIosHeartEmpty size={22}/>}
+                    <HPad size={4}/>
+                    <div>{CountWithUnit(bookmarkCount)}</div>
+                </PrettyButton>
+            </Horizental>
+            : null
+    )
+}

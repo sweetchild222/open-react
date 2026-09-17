@@ -1,0 +1,168 @@
+import {useState, useContext, useEffect, useRef} from "react";
+import {useNavigate, useParams} from 'react-router-dom';
+
+import * as BlogAPI from '@rest/BlogAPI.js'
+import * as SubscribeAPI from '@rest/SubscribeAPI.js'
+import AuthContext from "@util/AuthContext.js";
+import Integer from "@util/Integer.js";
+import ProfileImage from "@gui/ProfileImage.js";
+import PrettyButton from "@gui/PrettyButton.js";
+import { useTranslation } from 'react-i18next';
+
+import {Horizental} from "@gui/Flex.js";
+import {HPad} from "@gui/Pad.js";
+
+
+export default function() {
+
+
+    const { t } = useTranslation()
+
+    const { b_id } = useParams()
+    
+    const blog_id = Integer(b_id)
+
+    const navigate = useNavigate()
+
+    const refLabelTitle = useRef(null)
+    
+    const [blog, setBlog] = useState(null)
+    const {auth, validAuth} = useContext(AuthContext)
+    const [isSubscribe, setIsSubscribe] = useState(null)
+    const [isSubscribeLoading, setIsSubscribeLoading] = useState(false)
+    
+    useEffect(()=>{
+
+        if(!blog_id){
+            navigate('/notFound')
+            return
+        }
+
+
+        BlogAPI.getBlog(blog_id).then((resBlog)=> {
+
+            if(resBlog.success == false){
+                navigate('/notFound')
+                return
+            }
+
+            setBlog(resBlog.payload)
+
+            
+            const query = 'blog_id=' + blog_id
+
+            SubscribeAPI.getSubscribe(query).then(res => {
+
+                if(res.success == false)
+                    return
+
+                
+
+                if(!validAuth(auth)){
+                    setIsSubscribe(false)
+                    return
+                }
+
+                setIsSubscribe(res.payload.findIndex(s => s.user_id === auth.user_id) != -1)
+            })
+        })
+
+    }, [blog_id])
+
+
+    const onClickNavigateBlog = (event) => {
+    
+        //event.stopPropagation()
+
+        if(!blog)
+            return
+        
+        navigate('/blog/' + blog.id)
+    }
+
+
+
+    const isOwner = ()=> {
+
+        return (validAuth(auth) && auth.blog_id == blog_id)
+    }
+    
+
+
+    const onClickNavigateHome = (event) =>{
+
+        //event.stopPropagation()
+
+        navigate('/')
+    }
+
+
+    const onClickSubscribe = async(event)=> {
+
+        //event.stopPropagation()
+
+        if(!validAuth(auth)){
+            window.showToast(t('toast.appBarBlog.requireLogin'), 'info')
+            navigate('/', {state:{comback:true}})
+            return
+        }
+
+        const query = 'user_id=' + auth.user_id + '&blog_id=' + blog_id
+
+        setIsSubscribeLoading(true)
+
+        const res = await SubscribeAPI.getSubscribe(query)
+
+        if(res.success == false){
+            setIsSubscribeLoading(false)
+            window.showToast(t('toast.appBarBlog.cannotSubscribeInfo'), 'system-error')
+            return
+        }
+
+        if(res.payload.length > 0){
+
+            const resDelete = await SubscribeAPI.deleteSubscribe(auth.jwt, res.payload[0].id)
+
+            setIsSubscribeLoading(false)
+
+            if(resDelete.success == true){
+                setIsSubscribe(false)                
+                window.showToast(t('toast.appBarBlog.cancelSubscribed'), 'info')
+            }
+            else
+                window.showToast(t('toast.appBarBlog.failedCancelSubscribed'), 'system-error')
+        }
+        else{
+
+            const payload = {
+                user_id:auth.user_id,
+                blog_id:blog_id
+            }
+
+            const resPost = await SubscribeAPI.postSubscribe(auth.jwt, payload)
+
+            setIsSubscribeLoading(false)
+
+            if(resPost.success == true){
+                setIsSubscribe(true)
+                window.showToast(t('toast.appBarBlog.successSubscribe'), 'info')
+            }
+            else{
+                window.showToast(t('toast.appBarBlog.failedSubscribe'), 'system-error')
+            }
+        }
+    }
+    
+    return blog ? (
+            <Horizental style={{alignItems:'center', backgroundColor:'#494D5F', width:'100%', boxShadow: '0 4px 2px -2px dimgray', position:'fixed', zIndex:1000, height:'64px', padding:'8px'}}>
+                <ProfileImage size={48} shape={'circle'} userId={blog.user_id} onClick={onClickNavigateBlog}/>
+                <HPad size={8}/>
+                <div className={'clamped-text'} ref={refLabelTitle} style={{'--line-count':1, color:'white', fontSize:'16px', borderColor:'white'}}>{blog.title}</div>
+                <div style={{flex:'1'}}/>
+                {!isOwner() && isSubscribe != null && <HPad size={8}/>}
+                {!isOwner() && isSubscribe != null && <PrettyButton tooltip={t('system.subscribe')} type={isSubscribe ? 'cancel' : 'default'} isLoading={isSubscribeLoading} onClick={onClickSubscribe} style={{width:'fit-content'}}>{isSubscribe ? t('system.subscribed') : t('system.subscribe')}</PrettyButton>}
+                <HPad size={8}/>
+                <img src='/logo/logo.svg' alt='logo' style={{height:'48px', width:'48px'}} onClick={onClickNavigateHome}/>
+            </Horizental>
+    ) : <div style={{backgroundColor:'#494D5F', width:'100%', boxShadow: '0 4px 2px -2px dimgray', position:'fixed', zIndex:1000, height:'64px'}}></div>
+}

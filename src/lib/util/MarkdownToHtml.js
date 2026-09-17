@@ -1,0 +1,216 @@
+
+import {micromark} from 'micromark'
+import {directive, directiveHtml} from 'micromark-extension-directive'
+import {frontmatter, frontmatterHtml} from 'micromark-extension-frontmatter'
+import {gfm, gfmHtml} from 'micromark-extension-gfm'
+import {math, mathHtml} from 'micromark-extension-math'
+import {defList, defListHtml } from 'micromark-extension-definition-list'
+import {highlightMark, highlightMarkHtml} from 'micromark-extension-highlight-mark'
+
+import hljs from 'highlight.js/lib/core'
+import 'highlight.js/styles/github-dark-dimmed.min.css'
+
+import DOMPurify from 'dompurify';
+
+import python from 'highlight.js/lib/languages/python'
+import java from 'highlight.js/lib/languages/java'
+import javascript from 'highlight.js/lib/languages/javascript'
+import xml from 'highlight.js/lib/languages/xml'
+import typescript from 'highlight.js/lib/languages/typescript'
+import css from 'highlight.js/lib/languages/css'
+import json from 'highlight.js/lib/languages/json'
+import csharp from 'highlight.js/lib/languages/csharp'
+import c from 'highlight.js/lib/languages/c'
+
+
+
+const createAdmonition = (name, content) => {
+
+    const titleIconMap = {info:'&#10004;', danger:'&#10006;', note:'&#10140;', tip:'&#9733;', caution:'&#9888;'}
+    const titleColorMap = {info:'#00DE6D;', danger:'#F22731;', note:'#1D2C79;', tip:'#3A8DDF;', caution:'#EFCF00;'}
+
+    const title = name
+    const titleIcon = titleIconMap[title]
+    const titleColor = titleColorMap[title]
+    const titleDiv = '<div style="color: ' + titleColor + ' font-weight:bold;">' + titleIcon + ' ' + title + '</div>'
+    
+    const contentDiv = '<div style="margin-top:10px; overflow-wrap: break-word;">' + content + '</div>'
+    
+    const containColorMap = {info:'#E5FCF0;', danger:'#FEE9EA;', note:'#E8E9F1;', tip:'#EBF3FC;', caution:'#FDFAE5;'}
+    const containBorderColor = {info:'#00DE6D;', danger:'#F22731;', note:'#1D2C79;', tip:'#3A8DDF;', caution:'#EFCF00;'}
+
+    const containColor = containColorMap[title]
+    const containBorder = containBorderColor[title]
+    
+    const containDiv = '<div style="background-color:' + containColor + ' border-left: 8px solid ' + containBorder + ' padding:10px;">' + titleDiv + contentDiv + '</div>'
+
+    return containDiv
+}
+
+
+const directiveFunc = directiveHtml({
+
+    youtube(directive){
+
+        const url = directive.attributes.url
+        const shorts = directive.attributes.shorts == 'y' ? true : false
+        const align = directive.attributes.align
+
+        const alignMap = {'center':'display:block; margin:auto;', 'start':'display:block; margin-right:auto;', 'end':'display:block; margin-left:auto;', 'left':'display:block; margin-right:auto;', 'right':'display:block; margin-left:auto;'}
+
+        const alignStyle = alignMap[align] != null ? alignMap[align] : ''
+
+        const width = shorts ? 315 : 560
+        const height = shorts ? 560 : 315
+        const aspectRatio = shorts ? '1/1.77' : '1.77/1';
+
+        const iframe = '<iframe title="Youtube" ' + 'style="' + alignStyle + ' width:' + width + 'px; ' + ' border:1px solid gray;' + ' max-width:100%; ' + 'aspect-ratio:auto '+ aspectRatio + ';"'
+                + ' allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen;" '
+                + ' src="' + url + '"></iframe>'
+            
+        this.tag(iframe)
+    },
+    info(directive){
+        const admonition = createAdmonition(directive.name, directive.content)
+        this.tag(admonition)
+    },
+    danger(directive){
+        const admonition = createAdmonition(directive.name, directive.content)
+        this.tag(admonition)
+    },
+    note(directive){
+        const admonition = createAdmonition(directive.name, directive.content)
+        this.tag(admonition)
+    },
+    tip(directive){
+        const admonition = createAdmonition(directive.name, directive.content)
+        this.tag(admonition)
+    },
+    caution(directive){
+        const admonition = createAdmonition(directive.name, directive.content)
+        this.tag(admonition)
+    }
+})
+
+
+
+hljs.registerLanguage('python', python)
+hljs.registerLanguage('java', java)
+hljs.registerLanguage('javascript', javascript)
+hljs.registerLanguage('xml', xml)
+hljs.registerLanguage('typescript', typescript)
+hljs.registerLanguage('css', css)
+hljs.registerLanguage('json', json)
+hljs.registerLanguage('csharp', csharp)
+hljs.registerLanguage('c', c)
+
+
+const adjustStyle = (html) => {
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html')
+
+    doc.querySelectorAll('pre').forEach(tag => {
+
+        tag.style.fontSize='18px'
+
+        if(tag.firstChild.nodeName == 'CODE') {
+            tag.firstChild.style.borderRadius = '3px'
+            hljs.highlightElement(tag.firstChild)
+        }
+    })
+
+            
+    doc.querySelectorAll('img').forEach( tag => {
+
+        tag.style.display='block';
+        tag.style.maxWidth='100%';
+        tag.style.aspectRatio='auto 1/1';
+        tag.style.margin='0 auto'
+        tag.style.border = '1px solid gray';
+        
+    })
+
+
+    doc.querySelectorAll('table').forEach(tag => {
+
+        tag.style.width='100%';
+        tag.style.borderCollapse='separate';
+        tag.style.borderSpacing='0'
+        
+        let isHead = false
+        
+        tag.querySelectorAll('thead').forEach(tag => {
+            
+            const trList = tag.querySelectorAll('tr')
+
+            trList.forEach(tag => {
+
+                tag.style.backgroundColor='#42444e'
+                tag.style.color = '#fff'
+                tag.style.textAlign = 'left'
+
+                tag.querySelectorAll('th').forEach(tag => {
+                    
+                    tag.style.padding='6px 10px'
+
+                    if(tag.textContent.length > 0)
+                        isHead = true
+                })
+            })
+        })
+
+
+        if(isHead == false)
+            tag.querySelectorAll('thead').forEach(el => el.remove());
+
+        let count = 0
+
+        tag.querySelectorAll('tbody').forEach( tag => {
+
+            const trList = tag.querySelectorAll('tr')
+
+            let first = true
+
+            trList.forEach(tag => {
+                
+                tag.style.backgroundColor= (++count % 2) ? '#DAEEFF' : '#DAEEFF';
+
+                const tdList = tag.querySelectorAll('td')
+                
+                tdList[0].style.borderLeft ='1px solid #c6c9cc';
+                
+                tdList.forEach(tag => {
+
+                    if(first == true && isHead == false)
+                        tag.style.borderTop = '1px solid #c6c9cc'
+
+                    tag.style.borderRight ='1px solid #c6c9cc';
+                    tag.style.borderBottom = '1px solid #c6c9cc'
+                    tag.style.padding='6px 10px'
+                })
+
+                first = false
+            })
+        })
+    })
+
+    return doc.body.innerHTML
+}
+
+export default (markdown) => {              
+
+    const extension = [directive(), frontmatter(), gfm(), highlightMark(), math(), defList]
+
+    const htmlExtension = [directiveFunc, frontmatterHtml(), gfmHtml(), highlightMarkHtml, mathHtml(), defListHtml]
+
+    const html = micromark(markdown, {extensions: extension, htmlExtensions: htmlExtension, allowDangerousHtml: true})
+
+    const styleHtml = adjustStyle(html)
+    
+    const sanitizedHTML = DOMPurify.sanitize(styleHtml, { ADD_TAGS: ["iframe"], ADD_ATTR: ['allow']});
+
+    return sanitizedHTML
+}
+
+

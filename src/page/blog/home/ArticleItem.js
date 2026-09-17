@@ -1,0 +1,84 @@
+import {useContext} from "react";
+import {useNavigate} from 'react-router-dom';
+
+import AuthContext from "@util/AuthContext.js";
+import ElapsedTime from "@util/ElapsedTime.js";
+import CountWithUnit from "@util/CountWithUnit.js";
+import {isMobile, isNotMobile} from "@util/DeviceType.js";
+import StateProgsImage from "@gui/StateProgsImage.js";
+import {HPad} from "@gui/Pad.js";
+import {Vertical, Horizental} from "@gui/Flex.js";
+import * as ArticleAPI from '@rest/ArticleAPI.js'
+
+import { MdThumbUpAlt } from "react-icons/md";
+import { IoMdHeart } from "react-icons/io";
+import { PiChatTeardropTextFill } from "react-icons/pi";
+import { useTranslation } from 'react-i18next';
+
+
+export default function({article, categoryName, style}) {
+
+
+    const { t } = useTranslation()
+
+    const {auth, validAuth} = useContext(AuthContext)
+    
+    const navigate = useNavigate()
+    
+    const onClickNavigateArticle = async() =>{
+
+        if(article.posted == 1)
+            navigate('article/' + article.id)
+        else{
+            
+            if(validAuth(auth)){
+
+                if(auth.blog_id != article.blog_id)
+                    return
+
+                const res = await ArticleAPI.getArticle(auth.jwt, article.id)
+
+                if(res.success == false){
+                    window.showToast(t('toast.articleItem.failedWritingArticle'), 'system-error')
+                    return
+                }
+                navigate('/blog/' + article.blog_id + '/write', {state:res.payload})
+            }
+        }
+    }
+
+    return (
+        <Horizental onClick={onClickNavigateArticle} style={{flex:'1', padding:'8px', cursor:'pointer', borderRadius:'3px', boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)', backgroundColor:'#F5F5F5', ...style}}>
+            <Vertical style={{flex:'1', marginLeft:'4px', marginRight:'8px'}}>
+                <div className={'clamped-text underline-text'} style={{'--line-count':1, fontSize:'18px', fontWeight:'500', marginBottom:'4px', color:'#1A1A1A'}}>{article.title != '' ? article.title: '...'}</div>
+                <div className={'clamped-text underline-text'} style={{'--line-count':isMobile() ? 2 : 5, marginBottom:'8px', color:'#222222'}}>{article.head.length >= 255 ? article.head + '...' : (article.head != '' ? article.head : t('page.blog.noContent'))}</div>
+                <div style={{flex:'1'}}/>
+                <Horizental style={{alignItems:'center', color:'#888888'}}>
+                    {article.posted == 1 &&
+                        <Horizental>
+                            <IoMdHeart size={22}/>
+                            <HPad size={4}/>
+                            {CountWithUnit(article.bookmark_count)}
+                            <HPad size={32}/>
+                            <MdThumbUpAlt size={22}/>
+                            <HPad size={4}/>
+                            {CountWithUnit(article.like_count)}
+                            <HPad size={32}/>
+                            <PiChatTeardropTextFill size={22}/>
+                            <HPad size={4}/>
+                            {CountWithUnit(article.comment_count)}
+                        </Horizental>
+                    }
+                    {article.posted == 0 && <Horizental style={{marginRight:'32px'}}>
+                            <div className={'clamped-text'} style={{'--line-count':1}}>{categoryName}</div>
+                        </Horizental>
+                    }
+                    {isNotMobile() &&<Horizental style={{flex:'1', whiteSpace: 'nowrap', justifyContent:'flex-end'}} >{article.post_at ? ElapsedTime(article.post_at) : ''}</Horizental>}
+                </Horizental>
+            </Vertical>
+            {isMobile() && article.thumbnail != '' && <StateProgsImage src={article.thumbnail + '?size=96x96'} width={96} height={96} borderWidth={0}/>}
+            {isNotMobile() && article.thumbnail != '' && <StateProgsImage src={article.thumbnail + '?size=170x170'} width={170} height={170} borderWidth={0}/>}
+        </Horizental>
+    )
+}
+
