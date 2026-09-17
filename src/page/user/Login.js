@@ -98,11 +98,11 @@ export default function() {
             <Vertical style={{width:'100%', height:'100%', alignItems:'center', justifyContent:'center'}}>
                 <label htmlFor='input_username'>{t('page.user.email')}</label>
                 <VPad size={4}/>
-                <input id='input_username' type='text' onKeyDown={onKeyDownUserName} maxLength={254} style={{width:'256px'}}/>
+                <input id='input_username' type='text' value='test1@1234.com' onKeyDown={onKeyDownUserName} maxLength={254} style={{width:'256px'}}/>
                 <VPad size={16}/>
                 <label htmlFor='input_password'>{t('page.user.password')}</label>
                 <VPad size={4}/>
-                <input id='input_password' type='password' onKeyDown={onKeyDownPassword} maxLength={254} style={{width:'256px'}}/>
+                <input id='input_password' type='password' value='Test1234@' onKeyDown={onKeyDownPassword} maxLength={254} style={{width:'256px'}}/>
                 <VPad size={16}/>
                 <Vertical>
                     <PrettyButton onClick={onClickLogin}  isLoading={isLoading} type='success'>{t('page.user.login')}</PrettyButton>
