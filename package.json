@@ -1,10 +1,6 @@
 {
   "name": "open-react",
-<<<<<<< HEAD
-  "version": "0.0.3",
-=======
   "version": "0.0.1",
->>>>>>> 796c92cf1127816d3c0619f03735067c56c31041
   "private": true,
   "dependencies": {
     "@mdxeditor/editor": "^3.52.4",
